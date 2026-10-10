@@ -1,85 +1,87 @@
-# AI Job Application Agent
+# JobBot: AI Job Application Agent
 
-An AI agent that finds remote software roles that fit a candidate, tailors the CV and cover letter to each one, fills in and submits the application, and logs every application in a Google Sheet. It runs unattended on GitHub Actions.
+A web app that finds jobs that fit each user's CV, tailors a CV and cover letter to every one, fills in and submits the application on the employer's own site, and tracks every application. Users sign in, upload their CV once and bring their own free AI key; JobBot applies for them through the working day.
 
-[![Watch the walkthrough (sample data)](media/job-agent-walkthrough-thumbnail.png)](media/job-agent-walkthrough.mp4)
+**Live at [jobbotapp.pages.dev](https://jobbotapp.pages.dev)**, with a 14-day free trial.
 
-> **About this repository.** It documents the project: how it works, its architecture, its safeguards and a walkthrough video. The source code is private because it runs against a real CV and a real application history. To see it working, [book a demo](https://calendly.com/prateeksahni/catchup) or email hksahni0@gmail.com.
+[![Watch the product video (sample data)](media/jobbot-promo-thumbnail.png)](media/jobbot-promo.mp4)
+
+> **About this repository.** It documents the project: what it does, how it's built, its safeguards and a product video. The source code is private because it handles users' CVs, contact details and application histories. To see it working, [try it live](https://jobbotapp.pages.dev), [book a demo](https://calendly.com/prateeksahni/catchup) or email hksahni0@gmail.com.
 
 ---
 
 ## The problem
 
-Applying for remote roles means rewriting the CV and answering the same form questions for every job. Most of a job search goes on that busywork instead of the roles themselves, and generic one-size-fits-all applications rarely get past applicant-tracking systems (ATS).
+Job hunting is a full-time job. Rewriting the CV and answering the same form questions for every role leaves little time for the roles themselves, and generic applications rarely get past applicant-tracking systems (ATS).
 
 ## What it does
 
 | Step | What happens |
 |---|---|
-| **1. Find** | Discovers companies hiring remotely through public remote-job feeds, then reads each company's own **Greenhouse, Lever or Ashby** job board through the system's public API. No scraping behind logins. |
-| **2. Screen** | Applies a title and location filter, then an **LLM fit check** (is the role really remote, can the candidate be hired from where they live, a fit score from 0 to 100), then an **ATS keyword gate** that drops roles where the CV can't honestly reach a strong keyword match. |
-| **3. Tailor** | Rewrites the CV in the job's own wording, using only skills and projects the candidate can prove (from the CV and the candidate's portfolio site). Every changed line is fact-checked, and the ATS score is recorded before and after. |
-| **4. Write** | Writes a cover letter for that specific company, citing the candidate's most relevant projects. |
-| **5. Apply** | Fills in the application form in Chrome with **Playwright**: the personal details, the CV and letter uploads, and every screening question, answered from a verified fact file. When Greenhouse emails a security code, the agent reads it through the **Gmail API** and enters it. It counts an application as submitted only when the site confirms it. |
-| **6. Track** | Logs every application, with the exact CV and letter it used, in a **Google Sheet** and a web dashboard. Anything that needs a human goes on a **Needs you** list. |
+| **1. Find** | Reads about **16,000 company job boards** on Greenhouse, Lever, Ashby, Workable, Recruitee, Breezy, Pinpoint and Personio through each system's free public API, and discovers new boards daily. No scraping, no logins. |
+| **2. Screen** | Per user: their title, location and work-mode preferences, then an **LLM fit check** (can they be hired from where they live or in a country they can work in; a fit score from 0 to 100), then an **ATS keyword gate**. |
+| **3. Tailor** | Rewrites the CV in the job's own wording, using only what the user's CV backs up. Every changed line is fact-checked, and the keyword match is shown before and after. |
+| **4. Write** | Writes a cover letter for that company, citing the most relevant experience. |
+| **5. Apply** | Fills in the form in Chrome with **Playwright** from the user's CV, details and saved answers. When a job site emails a security code, it reads it through the **Gmail API**. An application counts only once the site confirms it. |
+| **6. Track** | One dashboard row per job, with filters, the exact CV and letter sent, and the keyword match. With Gmail connected (opt-in), employers' replies are spotted and a weekly summary lands in the inbox. Jobs it can't submit (a CAPTCHA, an account needed) wait under **Apply yourself** with their tailored CV and letter ready. |
 
 ## Screenshots
 
-These use sample data: the candidate, the companies and every number are made up.
+These use sample data: the user, the companies and every number are made up.
 
 | | |
 |---|---|
-| ![Dashboard](media/screenshots/dashboard.webp) **Dashboard:** upload a Word CV and the profile rebuilds itself. | ![Tailored CV](media/screenshots/tailored-cv.webp) **Tailoring:** the job's keywords, worked into real experience. |
-| ![Application form](media/screenshots/apply.webp) **Applying:** the form filled in by the bot, plus the emailed security code. | ![Submitted](media/screenshots/submitted.webp) **Confirmed:** counted only once the site confirms the submission. |
-| ![Google Sheet](media/screenshots/sheet.webp) **Tracking:** every application, with the CV and letter it used. | ![GitHub Actions](media/screenshots/actions.webp) **Under the hood:** several applications in parallel on GitHub Actions. |
+| ![Landing page](media/screenshots/landing.webp) **Landing page:** what it does, plans and FAQ. | ![Dashboard](media/screenshots/dashboard.webp) **Dashboard:** today's applications, the month so far, the queue and employers' replies. |
+| ![Applications](media/screenshots/applications.webp) **Applications:** every job, its status and the keyword match before and after tailoring. | ![Application detail](media/screenshots/application-detail.webp) **One application:** the match, the skills left out because the CV doesn't show them, and the CV and letter sent. |
+| ![Profile & CV](media/screenshots/profile.webp) **Profile & CV:** upload a CV and see what JobBot read from it. | ![Questions](media/screenshots/questions.webp) **Questions:** what it can't answer truthfully, it asks, once. |
+| ![Job preferences](media/screenshots/preferences.webp) **Preferences:** work mode, countries and job titles. | ![Plans](media/screenshots/plans.webp) **Plans:** Starter, Pro and Max, by applications a day. |
+| ![AI keys](media/screenshots/ai-key.webp) **AI keys:** each user's own free key, stored encrypted. | |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Google["Google Workspace"]
-        AS["Apps Script<br/>scheduler + sync"]
-        GS["Google Sheet<br/>Applications · Needs you · Runs"]
-        WD["Web dashboard<br/>+ CV upload"]
-        GM["Gmail API<br/>(OAuth, Google Cloud)"]
+    U["User<br/>(browser)"]
+    subgraph CF["Cloudflare"]
+        W["Web app<br/>React · Vite · Tailwind<br/>Worker API · Google sign-in"]
+        C["Hourly scheduler"]
     end
+    DB[("Neon Postgres<br/>users · jobs · applications<br/>encrypted keys")]
     subgraph GH["GitHub Actions"]
-        T["tick: find → screen → tailor → apply"]
-        B["batch: matrix of parallel apply jobs → merge"]
-        S[("state branch<br/>SQLite + generated CVs")]
+        T["job bot: shared board fetch,<br/>then a turn per user:<br/>screen → tailor → apply"]
     end
-    J["Greenhouse / Lever / Ashby<br/>public job-board APIs"]
-    L["LLMs<br/>NVIDIA NIM · Groq"]
+    J["~16,000 job boards<br/>public ATS APIs"]
+    L["LLMs<br/>user's own NVIDIA key · Groq"]
+    G["Gmail API<br/>(OAuth, opt-in)"]
 
-    AS -- "workflow_dispatch on a schedule" --> T
-    WD -- "Run now / upload CV" --> AS
+    U --> W
+    W <--> DB
+    C -- "workflow_dispatch" --> T
+    T <--> DB
     T --> J
     T --> L
-    T -- "security code" --> GM
-    T --> S
-    B --> S
-    S -- "dashboard.json" --> AS --> GS
-    AS --> WD
+    T -- "security codes · replies" --> G
 ```
 
-- **Scheduling:** GitHub's own cron is unreliable for frequent jobs, so a Google Apps Script time trigger starts each run through the GitHub API (`workflow_dispatch`). It skips a slot while a run is still going.
-- **Parallel runs:** a batch workflow fans the queued jobs out across a GitHub Actions matrix, then a merge job combines each worker's results into one state.
-- **State:** a SQLite database and the generated documents live on a dedicated branch, force-pushed as a single commit, so the main branch stays clean.
-- **Models:** a fallback chain across providers (NVIDIA NIM and Groq), with per-request token limits, so a model outage or rate limit doesn't stop a run.
-- **CV upload:** a Word CV uploaded from the Sheet or the dashboard is committed through the GitHub API, and a workflow rebuilds the structured profile from it.
+- **Users:** Google sign-in; a 14-day trial, then Starter, Pro or Max (3, 6 or 10 applications a day).
+- **Per-user data:** CV profile, contact details and right to work, preferences, saved answers, and encrypted API keys and Gmail token. Job postings are shared; each user has their own verdicts.
+- **Scheduling:** the web app's hourly cron starts the bot through the GitHub API (`workflow_dispatch`); GitHub's own cron proved unreliable.
+- **Pacing:** one application per run per user, during the job's region's working hours, within the plan's daily cap and at most two per company in 30 days.
+- **Models:** each user's own free NVIDIA key, with Groq as an optional backup and a fallback chain across models.
+- **History:** it started as a single-user agent driven by a Google Sheet and Apps Script; the web app now schedules and manages everything.
 
 ## Safeguards
 
-- **No fabrication.** Answers and CV changes are checked against the candidate's verified facts. If a required question asks for something it doesn't know, the agent stops and puts the job on **Needs you**. It never guesses.
-- **Human in the loop.** CAPTCHAs, bot checks, essay questions and anything it's unsure about go to a person, with the reason.
-- **Paced like a person.** Applications go out during each region's working hours, under a daily cap and a per-company limit.
-- **Respects the platforms.** It uses public job-board APIs and doesn't apply through LinkedIn or Indeed, which forbid automation.
-- **Least privilege.** The GitHub token is fine-grained to one repository. The Gmail integration only searches for the job board's security-code emails, and deletes each one after a successful submit. Secrets live in GitHub Actions secrets and Apps Script properties.
+- **No fabrication.** CV changes and answers are checked against what the user's CV and saved answers back up. A question it has no facts for goes to the user's **Questions** page, and the job is applied to once they answer. It never guesses.
+- **Human in the loop.** CAPTCHAs and bot checks are skipped, never bypassed; those jobs wait under **Apply yourself**.
+- **Paced like a person.** Working hours, a daily cap and a per-company limit.
+- **Respects the platforms.** Public job-board APIs only; it doesn't apply through LinkedIn or Indeed, which forbid automation.
+- **Privacy.** Keys and Gmail access are stored encrypted. Gmail is opt-in: it reads security codes (moving each to Trash once used) and, if turned on, only the sender, subject and preview of new emails to spot employers' replies. It never sends or changes email.
 
 ## Tech stack
 
-**Python** · **Playwright** · LLMs (**NVIDIA NIM**, **Groq**) · **GitHub Actions** (scheduled, matrix and merge workflows) · **Google Apps Script** · **Google Sheets** · **Gmail API** with **Google Cloud OAuth** · SQLite · python-docx and fpdf2 for the documents
+**Python** · **Playwright** · LLMs (**NVIDIA NIM**, **Groq**) · **React** + Vite + Tailwind CSS + shadcn/ui · **Cloudflare Workers** and Pages · **Neon Postgres** · **GitHub Actions** · **Gmail API** with **Google Cloud OAuth** · Google sign-in
 
 ## Author
 
-**Prateek Sahni**: [prateeksahni.pages.dev](https://prateeksahni.pages.dev) · [LinkedIn](https://www.linkedin.com/in/prateek-sahni-meng) · hksahni0@gmail.com · [book a call](https://calendly.com/prateeksahni/catchup)
+**Prateek Sahni**: [prateeksahni.pages.dev](https://prateeksahni.pages.dev/projects/job-agent/) · [LinkedIn](https://www.linkedin.com/in/prateek-sahni-meng) · hksahni0@gmail.com · [book a call](https://calendly.com/prateeksahni/catchup)
