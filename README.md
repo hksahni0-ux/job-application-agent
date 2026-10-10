@@ -31,7 +31,7 @@ These use sample data: the user, the companies and every number are made up.
 
 | | |
 |---|---|
-| ![Landing page](media/screenshots/landing.webp) **Landing page:** a 3D background in three.js (translucent career cards, a matching network with light pulses, particles in depth), the product video, plans and FAQ. | ![Dashboard](media/screenshots/dashboard.webp) **Dashboard:** today's applications, the month so far, the queue and employers' replies. |
+| ![Landing page](media/screenshots/landing.webp) **Landing page:** what it does, plans and FAQ. | ![Dashboard](media/screenshots/dashboard.webp) **Dashboard:** today's applications, the month so far, the queue and employers' replies. |
 | ![Applications](media/screenshots/applications.webp) **Applications:** every job, its status and the keyword match before and after tailoring. | ![Application detail](media/screenshots/application-detail.webp) **One application:** the match, the skills left out because the CV doesn't show them, and the CV and letter sent. |
 | ![Profile & CV](media/screenshots/profile.webp) **Profile & CV:** upload a CV and see what JobBot read from it. | ![Questions](media/screenshots/questions.webp) **Questions:** what it can't answer truthfully, it asks, once. |
 | ![Job preferences](media/screenshots/preferences.webp) **Preferences:** work mode, countries and job titles. | ![Plans](media/screenshots/plans.webp) **Plans:** Starter, Pro and Max, by applications a day. |
