@@ -2,7 +2,7 @@
 
 A web app that finds jobs that fit each user's CV, tailors a CV and cover letter to every one, fills in and submits the application on the employer's own site, and tracks every application. Users sign in, upload their CV once and bring their own free AI key; JobBot applies for them through the working day.
 
-**Live at [jobbotapp.pages.dev](https://jobbotapp.pages.dev)**, with a 14-day free trial.
+**Live at [jobbotapp.pages.dev](https://jobbotapp.pages.dev)**, with a free trial: 10 applications within 3 days, no card needed.
 
 [![Watch the product video (sample data)](media/jobbot-promo-thumbnail.png)](media/jobbot-promo.mp4)
 
@@ -63,7 +63,7 @@ flowchart LR
     T -- "security codes · replies" --> G
 ```
 
-- **Users:** Google sign-in; a 14-day trial, then Starter, Pro or Max (3, 6 or 10 applications a day).
+- **Users:** Google sign-in; a free trial of 10 applications within 3 days (5 sent automatically, 5 prepared to send yourself), then Starter, Pro or Max (3, 6 or 10 applications a day).
 - **Per-user data:** CV profile, contact details and right to work, preferences, saved answers, and encrypted API keys and Gmail token. Job postings are shared; each user has their own verdicts.
 - **Scheduling:** the web app's hourly cron starts the bot through the GitHub API (`workflow_dispatch`); GitHub's own cron proved unreliable.
 - **Pacing:** one application per run per user, during the job's region's working hours, within the plan's daily cap and at most two per company in 30 days.
